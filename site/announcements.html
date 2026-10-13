@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Announcements | Homeowners Association</title>
+  <meta name="description" content="News, documents, and email updates for homeowners.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;700&family=Public+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <script src="js/config.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="index.html" data-hoa-name>Homeowners Association</a>
+      <nav class="site-nav" aria-label="Main">
+        <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="announcements.html" aria-current="page">Announcements</a></li>
+        <li><a href="documents.html">Documents</a></li>
+        <li><a href="subscribe.html">Email updates</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <div class="wrap page-head">
+      <h1>Announcements</h1>
+      <p>Notices from the board, newest first. Pinned notices stay at the top.</p>
+    </div>
+    <div class="wrap section">
+      <ul class="feed" id="feed" aria-live="polite"><li class="empty">Loading announcements…</li></ul>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>&copy; <span data-year></span> <span data-hoa-name></span></p>
+      <p><a href="unsubscribe.html">Unsubscribe from emails</a> &nbsp; <a href="admin.html">Board sign-in</a></p>
+    </div>
+  </footer>
+  <script type="module" src="js/ui.js"></script>
+  <script type="module" src="js/announcements.js"></script>
+</body>
+</html>

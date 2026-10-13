@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Board tools | Homeowners Association</title>
+  <meta name="description" content="News, documents, and email updates for homeowners.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;700&family=Public+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <script src="js/config.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="index.html" data-hoa-name>Homeowners Association</a>
+      <nav class="site-nav" aria-label="Main">
+        <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="announcements.html">Announcements</a></li>
+        <li><a href="documents.html">Documents</a></li>
+        <li><a href="subscribe.html">Email updates</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <div class="wrap page-head">
+      <h1>Board tools</h1>
+      <p>Post announcements, upload documents, review meeting minutes, and see who's on the email list.</p>
+    </div>
+    <div class="wrap section">
+      <div id="admin-status" class="status"></div>
+
+      <form class="form-card" id="sign-in-form" hidden>
+        <h2>Board sign-in</h2>
+        <div class="field"><label for="username">Username</label><input type="text" id="username" name="username" required autocomplete="username" autocapitalize="none"></div>
+        <div class="field"><label for="password">Password</label><input type="password" id="password" name="password" required autocomplete="current-password"></div>
+        <button class="btn" type="submit">Sign in</button>
+        <p class="hint" style="margin-top:1rem">Forgot your password? Ask whoever manages the website to reset it.</p>
+      </form>
+
+      <div id="admin-panel" hidden>
+        <p>Signed in as <strong id="who"></strong>. <button class="btn btn-quiet btn-sm" id="sign-out" type="button">Sign out</button></p>
+
+        <div class="tabs" role="tablist">
+          <button role="tab" id="tab-ann" aria-controls="panel-ann" aria-selected="true">Announcements</button>
+          <button role="tab" id="tab-docs" aria-controls="panel-docs" aria-selected="false">Documents</button>
+          <button role="tab" id="tab-minutes" aria-controls="panel-minutes" aria-selected="false">Meeting minutes</button>
+          <button role="tab" id="tab-subscribers" aria-controls="panel-subs" aria-selected="false">Subscribers</button>
+        </div>
+
+        <section id="panel-ann" role="tabpanel" aria-labelledby="tab-ann">
+          <div class="admin-grid">
+            <form class="form-card" id="announcement-form">
+              <h2>Post an announcement</h2>
+              <div id="announcement-status" class="status"></div>
+              <div class="field"><label for="a-title">Title</label><input type="text" id="a-title" name="title" required maxlength="200"></div>
+              <div class="field"><label for="a-body">Message</label><textarea id="a-body" name="body" required></textarea></div>
+              <div class="field"><label class="checkbox"><input type="checkbox" name="pinned"> Pin to the top</label></div>
+              <div class="field"><label class="checkbox"><input type="checkbox" name="sendEmail"> Also email it to subscribers</label></div>
+              <button class="btn" type="submit">Post announcement</button>
+            </form>
+            <div><h2>Posted</h2><ul class="admin-list" id="announcement-list"></ul></div>
+          </div>
+        </section>
+
+        <section id="panel-docs" role="tabpanel" aria-labelledby="tab-docs" hidden>
+          <div class="admin-grid">
+            <form class="form-card" id="document-form">
+              <h2>Upload a document</h2>
+              <div id="document-status" class="status"></div>
+              <div class="field"><label for="d-title">Title</label><input type="text" id="d-title" name="title" required></div>
+              <div class="field">
+                <label for="d-category">Category</label>
+                <input type="text" id="d-category" name="category" list="categories" value="General">
+                <datalist id="categories">
+                  <option>Governing Documents</option><option>Meeting Minutes</option>
+                  <option>Financials</option><option>Forms</option><option>Newsletters</option><option>General</option>
+                </datalist>
+              </div>
+              <div class="field"><label for="d-desc">Description <span class="doc-meta">(optional)</span></label><input type="text" id="d-desc" name="description"></div>
+              <div class="field">
+                <label for="d-file">File</label>
+                <input type="file" id="d-file" name="file" required accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.txt">
+                <p class="hint">PDF, Word, Excel, image, or text. Up to 50 MB.</p>
+              </div>
+              <button class="btn" type="submit">Upload document</button>
+            </form>
+            <div><h2>Uploaded</h2><ul class="admin-list" id="document-list"></ul></div>
+          </div>
+        </section>
+
+        <section id="panel-minutes" role="tabpanel" aria-labelledby="tab-minutes" hidden>
+          <p class="panel-note">Only board members can see minutes here. Homeowners can't view or download them.</p>
+          <div id="minutes-home" class="admin-grid">
+            <form class="form-card" id="minutes-form">
+              <h2>Upload draft minutes</h2>
+              <div id="minutes-status" class="status"></div>
+              <div class="field"><label for="m-date">Meeting date</label><input type="date" id="m-date" name="meetingDate" required></div>
+              <div class="field">
+                <label for="m-title">Title <span class="doc-meta">(optional)</span></label>
+                <input type="text" id="m-title" name="title" maxlength="200" placeholder="Board meeting minutes">
+              </div>
+              <div class="field">
+                <label for="m-file">File</label>
+                <input type="file" id="m-file" name="file" required accept=".pdf,.doc,.docx,.txt">
+                <p class="hint">PDF, Word, or text. Up to 25 MB.</p>
+              </div>
+              <button class="btn" type="submit">Upload draft</button>
+            </form>
+            <div>
+              <h2>Minutes</h2>
+              <ul class="minutes-list" id="minutes-list"></ul>
+            </div>
+          </div>
+          <div id="minutes-detail" hidden></div>
+        </section>
+
+        <section id="panel-subs" role="tabpanel" aria-labelledby="tab-subscribers" hidden>
+          <h2>Email list</h2>
+          <p id="subscriber-count"></p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th scope="col">Email</th><th scope="col">Name</th><th scope="col">Status</th><th scope="col">Signed up</th></tr></thead>
+              <tbody id="subscriber-rows"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>&copy; <span data-year></span> <span data-hoa-name></span></p>
+      <p><a href="unsubscribe.html">Unsubscribe from emails</a> &nbsp; <a href="admin.html">Board sign-in</a></p>
+    </div>
+  </footer>
+  <script type="module" src="js/ui.js"></script>
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>

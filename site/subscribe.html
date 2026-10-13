@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Email updates | Homeowners Association</title>
+  <meta name="description" content="News, documents, and email updates for homeowners.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;700&family=Public+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <script src="js/config.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="index.html" data-hoa-name>Homeowners Association</a>
+      <nav class="site-nav" aria-label="Main">
+        <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="announcements.html">Announcements</a></li>
+        <li><a href="documents.html">Documents</a></li>
+        <li><a href="subscribe.html" aria-current="page">Email updates</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <div class="wrap page-head">
+      <h1>Email updates</h1>
+      <p>Get board announcements in your inbox. We only email when there's a new notice.</p>
+    </div>
+    <div class="wrap section">
+      <div class="form-card">
+        <div id="subscribe-status" class="status"></div>
+        <form id="subscribe-form" novalidate>
+          <div class="field">
+            <label for="name">Name <span class="doc-meta">(optional)</span></label>
+            <input type="text" id="name" name="name" autocomplete="name">
+          </div>
+          <div class="field">
+            <label for="email">Email address</label>
+            <input type="email" id="email" name="email" required autocomplete="email">
+            <p class="hint">We'll send a link to confirm it's you.</p>
+          </div>
+          <div class="honeypot" aria-hidden="true">
+            <label for="website">Leave this empty</label>
+            <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+          </div>
+          <button class="btn" type="submit">Subscribe</button>
+        </form>
+      </div>
+      <p style="margin-top:1.5rem">Already subscribed? <a href="unsubscribe.html">Unsubscribe here</a>.</p>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>&copy; <span data-year></span> <span data-hoa-name></span></p>
+      <p><a href="unsubscribe.html">Unsubscribe from emails</a> &nbsp; <a href="admin.html">Board sign-in</a></p>
+    </div>
+  </footer>
+  <script type="module" src="js/ui.js"></script>
+  <script type="module" src="js/subscribe.js"></script>
+</body>
+</html>
