@@ -1,0 +1,16 @@
+# Amplify Hosting build settings.
+# The website is plain HTML/CSS/JS in site/, so there's nothing to build:
+# Amplify publishes the site/ folder as is. The api/ folder is NOT deployed by Amplify;
+# it runs as a separate Lambda function (see the setup guide, Step 5).
+version: 1
+frontend:
+  phases:
+    build:
+      commands:
+        - echo "Static site, no build step"
+  artifacts:
+    baseDirectory: site
+    files:
+      - '**/*'
+  cache:
+    paths: []

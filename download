@@ -1,0 +1,9 @@
+# Dependencies and build output for the Lambda (rebuild with: cd api && npm install --omit=dev && npm run package)
+node_modules/
+api/hoa-api.zip
+
+# Local / OS files
+.DS_Store
+Thumbs.db
+*.log
+.env
