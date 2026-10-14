@@ -2,29 +2,61 @@ import { api } from './api.js';
 import { setCredentials, clearCredentials, authHeader } from './auth.js';
 import { esc, formatDate, formatSize, setStatus } from './ui.js';
 import { initMinutes, loadMinutes } from './board-minutes.js';
+import { initBoardUsers, loadBoardUsers } from './board-users.js';
 
 const signInForm = document.getElementById('sign-in-form');
+const firstPasswordForm = document.getElementById('first-password-form');
 const panel = document.getElementById('admin-panel');
 const pageStatus = document.getElementById('admin-status');
 let started = false;
 
+let currentUser = '';
+
+function showOnly(el) {
+  for (const x of [signInForm, firstPasswordForm, panel]) x.hidden = x !== el;
+}
+
 async function showPanelIfSignedIn() {
-  if (!authHeader()) { signInForm.hidden = false; panel.hidden = true; return; }
+  if (!authHeader()) { showOnly(signInForm); return; }
   try {
-    const { user } = await api('/admin/check', { auth: true });
+    const { user, mustChangePassword } = await api('/admin/check', { auth: true });
+    currentUser = user;
+    if (mustChangePassword) {
+      // First sign-in with a temporary password, or after a reset: choose a new one first.
+      document.getElementById('first-password-user').textContent = user;
+      showOnly(firstPasswordForm);
+      setStatus(pageStatus, '');
+      return;
+    }
     document.getElementById('who').textContent = user;
-    signInForm.hidden = true;
-    panel.hidden = false;
+    showOnly(panel);
     setStatus(pageStatus, '');
-    if (!started) { started = true; initTabs(); initMinutes(); }
+    if (!started) { started = true; initTabs(); initMinutes(); initBoardUsers(() => currentUser); }
     loadAnnouncements();
     loadDocuments();
   } catch (e) {
-    signInForm.hidden = false;
-    panel.hidden = true;
+    showOnly(signInForm);
     setStatus(pageStatus, e.message, 'error');
   }
 }
+
+firstPasswordForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = new FormData(firstPasswordForm);
+  const status = document.getElementById('first-password-status');
+  if (f.get('newPassword') !== f.get('confirmPassword')) return setStatus(status, "The passwords don't match.", 'error');
+  const btn = firstPasswordForm.querySelector('button[type="submit"]');
+  btn.disabled = true;
+  try {
+    await api('/account/password', { method: 'POST', auth: true, body: { newPassword: f.get('newPassword') } });
+    setCredentials(currentUser, f.get('newPassword'));
+    firstPasswordForm.reset();
+    setStatus(status, '');
+    await showPanelIfSignedIn();
+    setStatus(pageStatus, 'Password set. Welcome to the board tools.', 'ok');
+  } catch (err) { setStatus(status, err.message, 'error'); }
+  finally { btn.disabled = false; }
+});
 
 signInForm.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -38,12 +70,14 @@ signInForm.addEventListener('submit', async (e) => {
   btn.disabled = false;
 });
 
-document.getElementById('sign-out').addEventListener('click', () => {
+function signOut() {
   clearCredentials();
-  panel.hidden = true;
-  signInForm.hidden = false;
+  currentUser = '';
+  showOnly(signInForm);
   setStatus(pageStatus, "You're signed out.", 'ok');
-});
+}
+document.getElementById('sign-out').addEventListener('click', signOut);
+document.getElementById('first-password-cancel').addEventListener('click', signOut);
 
 showPanelIfSignedIn();
 
@@ -58,6 +92,7 @@ function initTabs() {
     });
     if (tab.id === 'tab-subscribers') loadSubscribers();
     if (tab.id === 'tab-minutes') loadMinutes();
+    if (tab.id === 'tab-board') loadBoardUsers();
   }));
 }
 
