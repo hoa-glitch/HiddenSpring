@@ -219,6 +219,10 @@ const routes = [
   ['DELETE', /^\/board-users\/([a-z0-9._-]+)$/,    accounts.removeBoardUser],
   ['POST',   /^\/board-users\/([a-z0-9._-]+)\/reset$/, accounts.resetBoardUser],
   ['POST',   /^\/account\/password$/,             accounts.changeOwnPassword],
+  ['PUT',    /^\/account\/email$/,                accounts.setOwnEmail],
+  // "Forgot your password?" — public; replies are the same whether or not the login exists
+  ['POST',   /^\/account\/forgot$/,               accounts.forgotPassword],
+  ['POST',   /^\/account\/reset$/,                accounts.resetWithToken],
   // Board-only meeting minutes (every handler checks the board login)
   ['GET',    /^\/minutes$/,                       minutes.listMinutes],
   ['POST',   /^\/minutes$/,                       minutes.createMinutes],
