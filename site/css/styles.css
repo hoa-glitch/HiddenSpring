@@ -184,7 +184,7 @@ input:focus, select:focus, textarea:focus { outline: 3px solid rgba(78,110,142,.
 /* ---------- Admin ---------- */
 .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start; }
 .admin-grid .form-card { max-width: none; }
-.tabs { display: flex; gap: .25rem; border-bottom: 1px solid var(--line); margin-bottom: 2rem; scrollbar-width: thin; }
+.tabs { display: flex; gap: .25rem; border-bottom: 1px solid var(--line); margin-bottom: 2rem; overflow-x: auto; scrollbar-width: thin; }
 .tabs button { white-space: nowrap; flex: 0 0 auto; }
 .tabs button {
   font: 600 var(--step-0) var(--font-body); background: none; border: 0; padding: .75rem 1rem;
@@ -277,3 +277,8 @@ td { vertical-align: top; }
   .board-actions { white-space: normal; text-align: left; }
   .board-actions .btn { margin: .25rem .35rem 0 0; }
 }
+
+/* ---------- Password reset ---------- */
+.reset-foot { color: var(--ink-soft); font-size: var(--step--1); margin: 1.5rem 0 0; }
+.reset-back { margin-top: 1.25rem; }
+#reset-status a { color: inherit; font-weight: 600; }
