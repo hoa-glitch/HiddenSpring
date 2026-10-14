@@ -1,7 +1,5 @@
 import { pbkdf2, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
-import { pbkdf2, timingSafeEqual } from 'node:crypto';
-import { promisify } from 'node:util';
 // ALLOWED_ORIGIN: one site address, or several separated by commas
 // (e.g. https://yourhoa.org,https://www.yourhoa.org). The reply names whichever one asked.
 const ORIGINS = (process.env.ALLOWED_ORIGIN || '*').split(',').map(o => o.trim().replace(/\/$/, '')).filter(Boolean);
