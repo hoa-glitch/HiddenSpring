@@ -106,3 +106,18 @@ CREATE TABLE IF NOT EXISTS board_audit (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_board_audit_created ON board_audit (created_at DESC);
+
+-- ---------- Self-service password reset ----------
+-- Email address used for "Forgot your password?" links. Added separately so existing installs upgrade.
+ALTER TABLE board_users ADD COLUMN IF NOT EXISTS email CITEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_board_users_email ON board_users (email) WHERE email IS NOT NULL;
+
+-- One-time reset links. Only a SHA-256 hash of the token is stored; the link expires after an hour.
+CREATE TABLE IF NOT EXISTS password_resets (
+  token_hash  TEXT PRIMARY KEY,
+  username    TEXT NOT NULL REFERENCES board_users(username) ON DELETE CASCADE,
+  expires_at  TIMESTAMPTZ NOT NULL,
+  used_at     TIMESTAMPTZ,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_password_resets_user ON password_resets (username, created_at DESC);
