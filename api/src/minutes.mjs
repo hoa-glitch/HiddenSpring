@@ -6,7 +6,8 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { s3 } from './s3.mjs';
 import { randomUUID } from 'node:crypto';
 import { db } from './db.mjs';
-import { json, HttpError, parseBody, requireAdmin, boardMembers } from './http.mjs';
+import { json, HttpError, parseBody } from './http.mjs';
+import { requireAdmin, boardMembers } from './accounts.mjs';
 
 const BUCKET = () => process.env.DOCS_BUCKET;
 const MAX_BYTES = 25 * 1024 * 1024;
@@ -56,7 +57,7 @@ export async function listMinutes(event) {
      WHERE m.version > 0
      ORDER BY m.meeting_date DESC, m.id DESC`);
   return json(200, {
-    board: boardMembers(),
+    board: await boardMembers(),
     minutes: rows.map(m => ({ ...summary(m), signoffs: m.signoffs, comment_count: m.comment_count })),
   });
 }
@@ -70,7 +71,7 @@ export async function minutesDetail(event, id) {
     db().query(`SELECT id, author, body, version, created_at FROM minutes_comments WHERE minutes_id = $1 ORDER BY created_at`, [id]),
     db().query(`SELECT reviewer, created_at FROM minutes_signoffs WHERE minutes_id = $1 ORDER BY created_at`, [id]),
   ]);
-  return json(200, { ...summary(m), me, board: boardMembers(), comments, signoffs });
+  return json(200, { ...summary(m), me, board: await boardMembers(), comments, signoffs });
 }
 
 // POST /minutes  {meetingDate, title, filename, contentType, size}
