@@ -53,3 +53,22 @@ export function announcementEmail(a, token) {
       <a href="${unsub}">Unsubscribe</a></p></div>`,
   };
 }
+
+export function passwordResetEmail(username, token) {
+  const link = `${SITE}/reset-password.html?token=${token}`;
+  return {
+    subject: 'Reset your HOA board password',
+    text: `Someone asked to reset the password for the board login "${username}".\n\n` +
+      `Choose a new password here (the link works once and expires in 1 hour):\n\n${link}\n\n` +
+      `If you didn't ask for this, ignore this email. Your password won't change.`,
+  };
+}
+
+export function passwordChangedEmail(username) {
+  return {
+    subject: 'Your HOA board password was changed',
+    text: `The password for the board login "${username}" was just changed using a reset link.\n\n` +
+      `If you didn't do this, ask another board member to reset your password right away ` +
+      `from the Board members tab, and let them know.`,
+  };
+}
