@@ -10,7 +10,8 @@
 import { pbkdf2, randomBytes, randomInt, timingSafeEqual, createHash } from 'node:crypto';
 import { promisify } from 'node:util';
 import { db } from './db.mjs';
-import { json, HttpError, parseBody } from './http.mjs';
+import { json, HttpError, parseBody, validEmail } from './http.mjs';
+import { sendMail, passwordResetEmail, passwordChangedEmail } from './mail.mjs';
 
 const pbkdf2Async = promisify(pbkdf2);
 const ITERATIONS = 600000;
@@ -46,6 +47,27 @@ async function passwordMatches(password, rec) {
 }
 
 const DUMMY = { iterations: ITERATIONS, salt: '00'.repeat(16), hash: '00'.repeat(32) };
+const sha256 = v => createHash('sha256').update(v).digest('hex');
+
+function checkNewPassword(pw) {
+  if (typeof pw !== 'string' || pw.length < MIN_PASSWORD) throw new HttpError(400, `Use at least ${MIN_PASSWORD} characters.`);
+  if (pw.length > 200) throw new HttpError(400, 'Use 200 characters or fewer.');
+  return pw;
+}
+
+function cleanEmail(raw) {
+  const email = String(raw || '').trim().toLowerCase();
+  if (!validEmail(email)) throw new HttpError(400, 'Enter a valid email address.');
+  return email;
+}
+
+// Turn the database's duplicate-email error into a plain message.
+function emailInUse(err) {
+  if (err?.code === '23505' && String(err.constraint || '').includes('email')) {
+    throw new HttpError(409, 'That email address is already used by another board login.');
+  }
+  throw err;
+}
 
 // Readable one-time password, e.g. "k7mp-x3qr-9fwt-h2nd" (no 0/o, 1/l/i).
 function temporaryPassword() {
@@ -132,7 +154,7 @@ export async function adminCheck(event) {
 export async function listBoardUsers(event) {
   const me = await requireAdmin(event);
   const [{ rows: site }, { rows: log }] = await Promise.all([
-    db().query(`SELECT username, created_by, created_at, must_change_password, last_sign_in_at
+    db().query(`SELECT username, email, created_by, created_at, must_change_password, last_sign_in_at
                   FROM board_users ORDER BY username`),
     db().query(`SELECT actor, action, target, created_at FROM board_audit ORDER BY created_at DESC LIMIT 25`),
   ]);
@@ -146,7 +168,9 @@ export async function listBoardUsers(event) {
 // POST /board-users  {username}  -> one-time temporary password
 export async function addBoardUser(event) {
   const me = await requireAdmin(event);
-  const username = String(parseBody(event).username || '').trim().toLowerCase();
+  const body = parseBody(event);
+  const username = String(body.username || '').trim().toLowerCase();
+  const email = cleanEmail(body.email);
   if (!USERNAME_RE.test(username)) {
     throw new HttpError(400, 'Usernames are 2 to 40 characters: letters, numbers, dots, dashes, or underscores.');
   }
@@ -154,9 +178,9 @@ export async function addBoardUser(event) {
   const temp = temporaryPassword();
   const h = await hashPassword(temp);
   const { rowCount } = await db().query(
-    `INSERT INTO board_users (username, iterations, salt, hash, must_change_password, created_by)
-     VALUES ($1, $2, $3, $4, TRUE, $5) ON CONFLICT (username) DO NOTHING`,
-    [username, h.iterations, h.salt, h.hash, me]);
+    `INSERT INTO board_users (username, email, iterations, salt, hash, must_change_password, created_by)
+     VALUES ($1, $2, $3, $4, $5, TRUE, $6) ON CONFLICT (username) DO NOTHING`,
+    [username, email, h.iterations, h.salt, h.hash, me]).catch(emailInUse);
   if (!rowCount) throw new HttpError(409, `"${username}" is already a board login.`);
   await audit(me, 'added', username);
   return json(201, { username, temporaryPassword: temp });
@@ -190,6 +214,7 @@ export async function resetBoardUser(event, username) {
     `UPDATE board_users SET iterations = $2, salt = $3, hash = $4, must_change_password = TRUE WHERE username = $1`,
     [username, h.iterations, h.salt, h.hash]);
   if (!rowCount) throw new HttpError(404, `"${username}" isn't a board login.`);
+  await db().query(`UPDATE password_resets SET used_at = now() WHERE username = $1 AND used_at IS NULL`, [username]);
   await audit(me, 'reset the password for', username);
   return json(200, { username, temporaryPassword: temp });
 }
@@ -201,15 +226,89 @@ export async function changeOwnPassword(event) {
   if (acct.source === 'aws') {
     throw new HttpError(400, 'Your login is a recovery login kept in the AWS settings. Change it there with the password tool.');
   }
-  const newPassword = String(parseBody(event).newPassword || '');
-  if (newPassword.length < MIN_PASSWORD) throw new HttpError(400, `Use at least ${MIN_PASSWORD} characters.`);
-  if (newPassword.length > 200) throw new HttpError(400, 'Use 200 characters or fewer.');
+  const newPassword = checkNewPassword(String(parseBody(event).newPassword || ''));
   if (await passwordMatches(newPassword, acct)) throw new HttpError(400, 'Choose a password different from your current one.');
   const h = await hashPassword(newPassword);
   await db().query(
     `UPDATE board_users SET iterations = $2, salt = $3, hash = $4, must_change_password = FALSE,
             password_changed_at = now() WHERE username = $1`,
     [acct.username, h.iterations, h.salt, h.hash]);
+  await db().query(`UPDATE password_resets SET used_at = now() WHERE username = $1 AND used_at IS NULL`, [acct.username]);
   await audit(acct.username, 'changed their own password', null);
   return json(200, { ok: true });
+}
+
+// PUT /account/email  {email}  — set your own address for password reset emails
+export async function setOwnEmail(event) {
+  const acct = await authenticate(event);
+  if (acct.source === 'aws') {
+    throw new HttpError(400, 'Recovery logins are kept in the AWS settings and reset there, so they have no email here.');
+  }
+  const email = cleanEmail(parseBody(event).email);
+  await db().query(`UPDATE board_users SET email = $2 WHERE username = $1`, [acct.username, email]).catch(emailInUse);
+  await audit(acct.username, 'updated their email address', null);
+  return json(200, { ok: true, email });
+}
+
+// ---------- "Forgot your password?" (no sign-in) ----------
+
+// POST /account/forgot  {login}  — username or email address
+// Always gives the same reply after the same minimum time, so it can't be used to find out
+// which usernames or emails exist. At most 3 links per login per hour.
+export async function forgotPassword(event) {
+  const started = Date.now();
+  const login = String(parseBody(event).login || '').trim().toLowerCase();
+  if (!login) throw new HttpError(400, 'Enter your username or email address.');
+  try {
+    const { rows: [u] } = await db().query(
+      `SELECT username, email FROM board_users WHERE (username = $1 OR email = $1) AND email IS NOT NULL`, [login]);
+    if (u) {
+      await db().query(`DELETE FROM password_resets WHERE created_at < now() - interval '1 day'`);
+      const { rows: [{ recent }] } = await db().query(
+        `SELECT count(*)::int AS recent FROM password_resets WHERE username = $1 AND created_at > now() - interval '1 hour'`,
+        [u.username]);
+      if (recent < 3) {
+        const token = randomBytes(32).toString('base64url');
+        // A new link cancels any older unused ones.
+        await db().query(`UPDATE password_resets SET used_at = now() WHERE username = $1 AND used_at IS NULL`, [u.username]);
+        await db().query(
+          `INSERT INTO password_resets (token_hash, username, expires_at) VALUES ($1, $2, now() + interval '1 hour')`,
+          [sha256(token), u.username]);
+        await sendMail({ to: u.email, ...passwordResetEmail(u.username, token) });
+        await audit('website', 'emailed a password reset link to', u.username);
+      }
+    }
+  } catch (err) {
+    console.error('forgot password failed', err);   // logged for whoever maintains the site; never shown
+  }
+  const wait = 1500 - (Date.now() - started);
+  if (wait > 0) await sleep(wait);
+  return json(200, { ok: true });
+}
+
+// POST /account/reset  {token, newPassword}
+export async function resetWithToken(event) {
+  const body = parseBody(event);
+  const token = String(body.token || '');
+  if (!/^[A-Za-z0-9_-]{20,100}$/.test(token)) {
+    throw new HttpError(400, 'This reset link is incomplete. Open the whole link from the email, or request a new one.');
+  }
+  const newPassword = checkNewPassword(String(body.newPassword || ''));
+  // Mark the link used in the same step that checks it, so it can only ever work once.
+  const { rows: [r] } = await db().query(
+    `UPDATE password_resets SET used_at = now()
+      WHERE token_hash = $1 AND used_at IS NULL AND expires_at > now()
+      RETURNING username`, [sha256(token)]);
+  if (!r) throw new HttpError(400, 'This reset link has expired or was already used. Request a new one.');
+
+  const h = await hashPassword(newPassword);
+  const { rows: [u] } = await db().query(
+    `UPDATE board_users SET iterations = $2, salt = $3, hash = $4, must_change_password = FALSE,
+            password_changed_at = now() WHERE username = $1 RETURNING username, email`,
+    [r.username, h.iterations, h.salt, h.hash]);
+  if (!u) throw new HttpError(400, 'This board login no longer exists.');
+  await db().query(`UPDATE password_resets SET used_at = now() WHERE username = $1 AND used_at IS NULL`, [u.username]);
+  await audit(u.username, 'reset their own password by email', null);
+  if (u.email) await sendMail({ to: u.email, ...passwordChangedEmail(u.username) }).catch(e => console.error('changed-notice email failed', e));
+  return json(200, { ok: true, username: u.username });
 }
