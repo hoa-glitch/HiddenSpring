@@ -42,7 +42,7 @@
         <div class="field"><label for="username">Username</label><input type="text" id="username" name="username" required autocomplete="username" autocapitalize="none"></div>
         <div class="field"><label for="password">Password</label><input type="password" id="password" name="password" required autocomplete="current-password"></div>
         <button class="btn" type="submit">Sign in</button>
-        <p class="hint" style="margin-top:1rem">Forgot your password? Ask whoever manages the website to reset it.</p>
+        <p class="hint" style="margin-top:1rem"><a href="reset-password.html">Forgot your password?</a></p>
       </form>
 
       <form class="form-card" id="first-password-form" hidden>
@@ -182,7 +182,20 @@
                   <input type="text" id="nb-username" name="username" required pattern="[A-Za-z0-9._-]{2,40}" autocapitalize="none" autocomplete="off" placeholder="e.g. jsmith">
                   <p class="hint">Letters, numbers, dots, dashes, or underscores. You'll get a temporary password to give them.</p>
                 </div>
+                <div class="field">
+                  <label for="nb-email">Their email</label>
+                  <input type="email" id="nb-email" name="email" required autocomplete="off">
+                  <p class="hint">Used only to send them a link if they forget their password.</p>
+                </div>
                 <button class="btn" type="submit">Add board member</button>
+              </form>
+
+              <form class="form-card" id="my-email-form">
+                <h2>My email</h2>
+                <p class="hint" id="my-email-note">Where we send a link if you forget your password.</p>
+                <div class="field"><label for="me-email">Email address</label>
+                  <input type="email" id="me-email" name="email" required autocomplete="email"></div>
+                <button class="btn" type="submit">Save email</button>
               </form>
 
               <form class="form-card" id="change-password-form">
