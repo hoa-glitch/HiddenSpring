@@ -5,7 +5,9 @@ import { s3 } from './s3.mjs';
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { db } from './db.mjs';
-import { json, HttpError, parseBody, requireAdmin, validEmail, setRequestOrigin } from './http.mjs';
+import { json, HttpError, parseBody, validEmail, setRequestOrigin } from './http.mjs';
+import * as accounts from './accounts.mjs';
+const { requireAdmin } = accounts;
 import { sendMail, confirmEmail, unsubscribeLinkEmail, announcementEmail } from './mail.mjs';
 import * as minutes from './minutes.mjs';
 
@@ -183,11 +185,6 @@ async function listSubscribers(event) {
   return json(200, rows);
 }
 
-// ---------- Board sign-in check ----------
-async function adminCheck(event) {
-  return json(200, { user: await requireAdmin(event) });
-}
-
 // ---------- One-time database setup ----------
 // Run from the Lambda console Test tab with the event {"action": "setup-database"}.
 // Website visitors can't trigger this: web requests always arrive with requestContext.
@@ -215,7 +212,13 @@ const routes = [
   ['POST',   /^\/unsubscribe$/,                   unsubscribe],
   ['POST',   /^\/unsubscribe\/one-click$/,        oneClickUnsubscribe],
   ['GET',    /^\/subscribers$/,                   listSubscribers],
-  ['GET',    /^\/admin\/check$/,                  adminCheck],
+  ['GET',    /^\/admin\/check$/,                  accounts.adminCheck],
+  // Board logins (any signed-in board member; recovery logins in ADMIN_USERS can't be changed here)
+  ['GET',    /^\/board-users$/,                   accounts.listBoardUsers],
+  ['POST',   /^\/board-users$/,                   accounts.addBoardUser],
+  ['DELETE', /^\/board-users\/([a-z0-9._-]+)$/,    accounts.removeBoardUser],
+  ['POST',   /^\/board-users\/([a-z0-9._-]+)\/reset$/, accounts.resetBoardUser],
+  ['POST',   /^\/account\/password$/,             accounts.changeOwnPassword],
   // Board-only meeting minutes (every handler checks the board login)
   ['GET',    /^\/minutes$/,                       minutes.listMinutes],
   ['POST',   /^\/minutes$/,                       minutes.createMinutes],
@@ -240,11 +243,12 @@ export async function handler(event) {
   try {
     for (const [m, re, fn] of routes) {
       const match = m === method && path.match(re);
-      if (match) return await fn(event, ...match.slice(1).map(Number));
+      // Numeric path parts (ids) become numbers; others (usernames) stay text.
+      if (match) return await fn(event, ...match.slice(1).map(v => (/^\d+$/.test(v) ? Number(v) : v)));
     }
     throw new HttpError(404, 'Not found.');
   } catch (err) {
-    if (err instanceof HttpError) return json(err.status, { error: err.message });
+    if (err instanceof HttpError) return json(err.status, { error: err.message, ...(err.code ? { code: err.code } : {}) });
     console.error(err);
     return json(500, { error: 'Something went wrong on the server. Try again in a minute.' });
   }
