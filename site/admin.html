@@ -32,7 +32,7 @@
   <main id="main">
     <div class="wrap page-head">
       <h1>Board tools</h1>
-      <p>Post announcements, upload documents, review meeting minutes, and see who's on the email list.</p>
+      <p>Post announcements, upload documents, review meeting minutes, manage the email list and board logins.</p>
     </div>
     <div class="wrap section">
       <div id="admin-status" class="status"></div>
@@ -45,6 +45,20 @@
         <p class="hint" style="margin-top:1rem">Forgot your password? Ask whoever manages the website to reset it.</p>
       </form>
 
+      <form class="form-card" id="first-password-form" hidden>
+        <h2>Choose your password</h2>
+        <p>You signed in as <strong id="first-password-user"></strong> with a temporary password. Choose your own to continue.</p>
+        <div id="first-password-status" class="status"></div>
+        <div class="field">
+          <label for="fp-new">New password</label>
+          <input type="password" id="fp-new" name="newPassword" required minlength="12" autocomplete="new-password">
+          <p class="hint">At least 12 characters. A few random words work well, like maple-porch-lantern-42.</p>
+        </div>
+        <div class="field"><label for="fp-confirm">Type it again</label><input type="password" id="fp-confirm" name="confirmPassword" required minlength="12" autocomplete="new-password"></div>
+        <button class="btn" type="submit">Save password</button>
+        <button class="btn btn-quiet" type="button" id="first-password-cancel">Sign out</button>
+      </form>
+
       <div id="admin-panel" hidden>
         <p>Signed in as <strong id="who"></strong>. <button class="btn btn-quiet btn-sm" id="sign-out" type="button">Sign out</button></p>
 
@@ -53,6 +67,7 @@
           <button role="tab" id="tab-docs" aria-controls="panel-docs" aria-selected="false">Documents</button>
           <button role="tab" id="tab-minutes" aria-controls="panel-minutes" aria-selected="false">Meeting minutes</button>
           <button role="tab" id="tab-subscribers" aria-controls="panel-subs" aria-selected="false">Subscribers</button>
+          <button role="tab" id="tab-board" aria-controls="panel-board" aria-selected="false">Board members</button>
         </div>
 
         <section id="panel-ann" role="tabpanel" aria-labelledby="tab-ann">
@@ -130,6 +145,56 @@
               <thead><tr><th scope="col">Email</th><th scope="col">Name</th><th scope="col">Status</th><th scope="col">Signed up</th></tr></thead>
               <tbody id="subscriber-rows"></tbody>
             </table>
+          </div>
+        </section>
+
+        <section id="panel-board" role="tabpanel" aria-labelledby="tab-board" hidden>
+          <div id="board-status" class="status"></div>
+          <div id="temp-password-box" class="temp-password" hidden>
+            <h3 id="temp-password-title"></h3>
+            <p>Give this temporary password to them privately, in person or by phone. It's shown only once. They'll choose their own password the first time they sign in.</p>
+            <div class="temp-password-row">
+              <code id="temp-password-value"></code>
+              <button type="button" class="btn btn-sm" id="temp-password-copy">Copy</button>
+            </div>
+            <button type="button" class="btn btn-quiet btn-sm" id="temp-password-done">Done</button>
+          </div>
+
+          <div class="admin-grid">
+            <div>
+              <h2>Board logins</h2>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th scope="col">Username</th><th scope="col">Added</th><th scope="col">Last sign-in</th><th scope="col"><span class="visually-hidden">Actions</span></th></tr></thead>
+                  <tbody id="board-rows"></tbody>
+                </table>
+              </div>
+              <p class="hint board-note">Recovery logins are kept in the AWS settings so the board can never be locked out. They can't be removed or reset here.</p>
+
+              <h3>Recent changes</h3>
+              <ul class="admin-list" id="board-log"></ul>
+            </div>
+            <div>
+              <form class="form-card" id="add-board-form">
+                <h2>Add a board member</h2>
+                <div class="field">
+                  <label for="nb-username">Username</label>
+                  <input type="text" id="nb-username" name="username" required pattern="[A-Za-z0-9._-]{2,40}" autocapitalize="none" autocomplete="off" placeholder="e.g. jsmith">
+                  <p class="hint">Letters, numbers, dots, dashes, or underscores. You'll get a temporary password to give them.</p>
+                </div>
+                <button class="btn" type="submit">Add board member</button>
+              </form>
+
+              <form class="form-card" id="change-password-form">
+                <h2>Change my password</h2>
+                <div class="field"><label for="cp-new">New password</label>
+                  <input type="password" id="cp-new" name="newPassword" required minlength="12" autocomplete="new-password">
+                  <p class="hint">At least 12 characters.</p></div>
+                <div class="field"><label for="cp-confirm">Type it again</label>
+                  <input type="password" id="cp-confirm" name="confirmPassword" required minlength="12" autocomplete="new-password"></div>
+                <button class="btn" type="submit">Change password</button>
+              </form>
+            </div>
           </div>
         </section>
       </div>
