@@ -30,12 +30,17 @@ export async function loadBoardUsers() {
              <button type="button" class="btn btn-danger btn-sm" data-remove="${esc(u.username)}">Remove</button>`;
       return `<tr>
         <td><strong>${esc(u.username)}</strong>${isMe && u.source === 'aws' ? ' <span class="doc-meta">(you)</span>' : ''}
+          ${u.source === 'site' ? `<br><span class="doc-meta">${u.email ? esc(u.email) : 'No email on file'}</span>` : ''}
           ${u.must_change_password ? '<br><span class="doc-meta">Temporary password</span>' : ''}</td>
         <td>${u.source === 'aws' ? '<span class="doc-meta">AWS settings</span>' : `${esc(formatDate(u.created_at))}<br><span class="doc-meta">by ${esc(u.created_by)}</span>`}</td>
         <td>${u.source === 'aws' ? '<span class="doc-meta">Not tracked</span>' : esc(when(u.last_sign_in_at))}</td>
         <td class="board-actions">${actions}</td>
       </tr>`;
     }).join('');
+    const mine = users.find(u => u.username === me);
+    const myForm = $('my-email-form');
+    myForm.hidden = !mine || mine.source === 'aws';
+    if (mine?.source === 'site' && document.activeElement !== $('me-email')) $('me-email').value = mine.email || '';
     $('board-log').innerHTML = log.length
       ? log.map(l => `<li><span><strong>${esc(l.actor)}</strong> ${esc(l.action)}${l.target ? ` <strong>${esc(l.target)}</strong>` : ''}</span>
           <span class="doc-meta">${esc(formatDate(l.created_at))}</span></li>`).join('')
@@ -59,11 +64,23 @@ export function initBoardUsers(currentUser) {
     btn.disabled = true;
     try {
       const { username, temporaryPassword } = await api('/board-users', {
-        method: 'POST', auth: true, body: { username: form.username.value },
+        method: 'POST', auth: true, body: { username: form.username.value, email: form.email.value },
       });
       form.reset();
       setStatus(status, '');
       showTempPassword(`Added ${username}`, temporaryPassword);
+      loadBoardUsers();
+    } catch (err) { setStatus(status, err.message, 'error'); }
+    finally { btn.disabled = false; }
+  });
+
+  $('my-email-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button');
+    btn.disabled = true;
+    try {
+      const { email } = await api('/account/email', { method: 'PUT', auth: true, body: { email: $('me-email').value } });
+      setStatus(status, `Saved. Password reset links will go to ${email}.`, 'ok');
       loadBoardUsers();
     } catch (err) { setStatus(status, err.message, 'error'); }
     finally { btn.disabled = false; }
