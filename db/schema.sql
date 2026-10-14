@@ -81,3 +81,28 @@ CREATE TABLE IF NOT EXISTS minutes_signoffs (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (minutes_id, reviewer)
 );
+
+-- ---------- Board logins managed on the website ----------
+-- Logins in the Lambda's ADMIN_USERS setting still work and can't be removed from the site;
+-- they're the recovery logins. Everything below is managed from the Board members tab.
+CREATE TABLE IF NOT EXISTS board_users (
+  username             TEXT PRIMARY KEY CHECK (username ~ '^[a-z0-9._-]{2,40}$'),
+  iterations           INTEGER NOT NULL,
+  salt                 TEXT NOT NULL,
+  hash                 TEXT NOT NULL,
+  must_change_password BOOLEAN NOT NULL DEFAULT TRUE,   -- true after an add or a reset
+  created_by           TEXT NOT NULL,
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+  password_changed_at  TIMESTAMPTZ,
+  last_sign_in_at      TIMESTAMPTZ
+);
+
+-- Who added, removed, or reset which login, and when.
+CREATE TABLE IF NOT EXISTS board_audit (
+  id          SERIAL PRIMARY KEY,
+  actor       TEXT NOT NULL,
+  action      TEXT NOT NULL,
+  target      TEXT,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_board_audit_created ON board_audit (created_at DESC);
